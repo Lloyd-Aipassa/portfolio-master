@@ -1,0 +1,316 @@
+---
+import Layout from "../layouts/Layout.astro";
+import Background from "../components/Background.astro";
+
+---
+<script>
+	// Functie om te controleren of een gebruiker is ingelogd
+	function checkAuth() {
+		fetch(
+			"https://backend-portfolio-coin.lloyd-aipassa.deno.net/users/check-auth",
+			{
+				credentials: "include", // Belangrijk voor cookies!
+			}
+		)
+			.then((response) => {
+				if (!response.ok) {
+					// Gebruiker is niet ingelogd, redirect naar inlogpagina
+					window.location.href = "/login"; // Zorg ervoor dat je de juiste URL voor de inlogpagina gebruikt
+				}
+				// Als je wilt, kun je hier andere dingen doen met de response als de gebruiker wel is ingelogd
+			})
+			.catch((error) => {
+				console.error("Auth check error:", error);
+				// Bij een fout kun je ook naar de inlogpagina omleiden als je dat wilt
+				window.location.href = "/login"; // Of laat het zo, afhankelijk van je errorbehandeling
+			});
+	}
+
+	// Voer de check uit op de dashboardpagina
+	document.addEventListener("DOMContentLoaded", checkAuth);
+</script>
+
+<script>
+	async function fetchUserProfile() {
+    try {
+        const response = await fetch('http://localhost:3001/users/profile', {
+            credentials: 'include',  // Belangrijk voor cookies!
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        });
+
+        if (response.ok) {
+            const userData = await response.json();
+            console.log('User profile:', userData);
+        }
+    } catch (error) {
+        console.error('Error fetching profile:', error);
+    }
+}
+
+fetchUserProfile();
+</script>
+
+
+<Layout title="Dashboard">
+	<Background />
+	<main>
+		<h1>Dashboard 2</h1>
+	</main>
+</Layout>
+
+
+<style>
+	main {
+		margin: auto;
+		padding: 1rem;
+		width: 1200px;
+		max-width: calc(100% - 2rem);
+		color: white;
+		font-size: 20px;
+		line-height: 1.6;
+	}
+
+	h1 {
+		font-size: 4rem;
+		font-weight: 700;
+		line-height: 1;
+		text-align: center;
+		margin-bottom: 1rem;
+	}
+
+	h2 {
+		font-size: 3rem;
+		font-weight: 700;
+		line-height: 1;
+		text-align: center;
+		margin-bottom: 1rem;
+	}
+
+	.coin-grid {
+		display: grid;
+		grid-template-columns: repeat(4, 1fr);
+		gap: 20px;
+		max-width: 1200px;
+		margin: 0 auto;
+		padding: 20px;
+	}
+
+	.flipkaart-container {
+		margin: 12px auto 0;
+		position: relative;
+		width: 400px;
+		height: 100px;
+		perspective: 1000px; /* Added for 3D effect */
+	}
+
+	.flipkaart {
+		position: absolute;
+		width: 100%;
+		height: 100%;
+		transform-style: preserve-3d;
+		transition: transform 0.5s ease;
+	}
+
+	.flipkaart-container:hover .flipkaart {
+		transform: rotateY(180deg);
+	}
+
+	.de-voorkant,
+	.de-achterkant {
+		position: absolute;
+		width: 100%;
+		height: 100%;
+		backface-visibility: hidden;
+		display: flex;
+		justify-content: center;
+		align-items: center;
+		pointer-events: none;
+		background: rgba(255, 255, 255, 0.1);
+		backdrop-filter: blur(10px);
+		border-radius: 20px;
+		border: 1px solid rgba(255, 255, 255, 0.2);
+		box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
+	}
+
+	.de-voorkant {
+	}
+
+	.de-achterkant {
+		transform: rotateY(
+			180deg
+		); /* Rotate back side to stay hidden initially */
+	}
+
+	.update-coin-btn {
+		background-color: #4caf50 !important;
+		margin-bottom: 12px;
+		display: flex;
+		align-items: center;
+		gap: 8px;
+	}
+
+	.submit {
+		margin: 20px auto;
+	}
+
+	.update-form {
+		border: 1px solid #ccc;
+		margin-top: 24px;
+		border-radius: 10px;
+		padding: 24px 0;
+	}
+
+	.hidden {
+		display: block;
+	}
+
+	.coin-card {
+		background: rgba(255, 255, 255, 0.05);
+		backdrop-filter: blur(10px);
+		-webkit-backdrop-filter: blur(10px);
+		border-radius: 10px;
+		border: 1px solid rgba(255, 255, 255, 0.1);
+		padding: 20px;
+		box-shadow: 0 8px 32px 0 rgba(73, 31, 135, 0.37);
+		transition: all 0.3s ease;
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		text-align: center;
+		padding-bottom: 48px;
+	}
+
+	.coin-card:hover {
+		transform: translateY(-5px);
+		box-shadow: 0 8px 32px 0 rgba(133, 67, 219, 0.6);
+		border: 1px solid rgba(255, 255, 255, 0.2);
+	}
+
+	.coin-name {
+		font-size: 1.2rem;
+		font-weight: bold;
+		color: #ffffff;
+		margin-bottom: 10px;
+	}
+
+	.coin-image {
+		width: 64px;
+		height: 64px;
+		margin-bottom: 15px;
+		border-radius: 50%;
+	}
+
+	.coin-details {
+		font-size: 0.9rem;
+		margin-bottom: 5px;
+	}
+
+	.coin-total {
+		font-size: 1.1rem;
+		font-weight: bold;
+		color: #4caf50;
+		margin: 10px 0;
+	}
+
+	.coin-link {
+		border: 1px solid #3498db;
+		padding: 2px 10px;
+		border-radius: 4px;
+		text-transform: uppercase;
+		display: flex;
+		align-items: center;
+		gap: 8px;
+		color: #3498db;
+		text-decoration: none;
+		margin-bottom: 15px;
+		transition: color 0.3s ease;
+		font-size: 16px;
+		font-weight: 600;
+		margin-top: 24px;
+		position: relative;
+		overflow: hidden;
+	}
+
+	a.coin-link::before {
+		content: "";
+		position: absolute;
+		top: 0;
+		left: -100%;
+		width: 100%;
+		height: 100%;
+		background: linear-gradient(
+			120deg,
+			transparent,
+			rgba(255, 255, 255, 0.3),
+			transparent
+		);
+		transition: all 0.4s;
+	}
+
+	a.coin-link:hover::before {
+		left: 100%;
+	}
+
+	.coin-link:hover {
+		color: #2980b9;
+	}
+
+	.delete-coin-btn {
+		display: inline-flex;
+		align-items: center;
+		gap: 8px;
+		background-color: rgba(255, 77, 77, 0.8);
+		color: white;
+		border: none;
+		padding: 8px 12px;
+		border-radius: 5px;
+		font-size: 0.9rem;
+		font-weight: bold;
+		cursor: pointer;
+		transition: all 0.3s ease;
+	}
+
+	.delete-coin-btn:hover {
+		background-color: rgba(255, 77, 77, 1);
+		transform: translateY(-2px);
+	}
+
+	.delete-coin-btn:active {
+		transform: translateY(0);
+	}
+
+	@media (max-width: 1200px) {
+		.coin-grid {
+			grid-template-columns: repeat(3, 1fr);
+		}
+	}
+
+	@media (max-width: 900px) {
+		.coin-grid {
+			grid-template-columns: repeat(2, 1fr);
+		}
+	}
+
+	@media (max-width: 600px) {
+		h2{
+			font-size: 20px;
+		}
+
+		.flipkaart-container {
+		position: relative;
+		width: 220px;
+		height: 80px;
+		perspective: 1000px; /* Added for 3D effect */
+	}
+
+	.de-voorkant,
+	.de-achterkant {
+		padding: 24px;
+	}
+		.coin-grid {
+			grid-template-columns: 1fr;
+		}
+	}
+</style>

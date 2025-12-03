@@ -1,0 +1,278 @@
+---
+export const prerender = true
+import Layout from "../layouts/Layout.astro";
+import Background from '../components/Background.astro';
+---
+
+<Layout title="Zoek coin id">
+	<Background />
+    <main class="glass-container">
+        <h1>Cryptocurrency Zoeker & Toevoegen</h1>
+        <section class="search-section glass-card">
+            <h2>Zoek Coin ID</h2>
+            <form id="search-form">
+                <input type="text" name="naam" id="naam" placeholder="Voer coin naam in" />
+                <input type="submit" value="Zoeken" />
+            </form>
+            <p id="resultaat" class="result-display">Resultaat:</p>
+        </section>
+
+        <section class="add-coin-section glass-card">
+            <h2>Voeg Nieuwe Coin Toe</h2>
+            <form id="coinForm">
+                <label for="coinName">Coin Naam:</label>
+                <input type="text" id="coinName" name="coinName" required />
+
+                <label for="amount">Amount (Prijs):</label>
+                <input type="number" id="amount" name="amount" required />
+
+                <button type="submit">Toevoegen</button>
+            </form>
+            <p id="result" class="result-display"></p>
+        </section>
+    </main>
+</Layout>
+
+<script>
+	declare global {
+		interface Window {
+			copyToClipboard: (coinId: string) => void;
+		}
+	}
+
+	// Definieer de functie in de globale scope
+	window.copyToClipboard = function (coinId) {
+		navigator.clipboard.writeText(coinId).then(
+			() => {
+				alert("Coin ID gekopieerd: " + coinId);
+			},
+			(err) => {
+				console.error("Fout bij het kopiëren: ", err);
+			}
+		);
+	};
+
+	document.addEventListener("DOMContentLoaded", function () {
+		const form = document.getElementById(
+			"search-form"
+		) as HTMLFormElement;
+		const coinNaam = document.getElementById(
+			"naam"
+		) as HTMLInputElement;
+		const resultaatElement = document.getElementById(
+			"resultaat"
+		) as HTMLParagraphElement;
+
+		form.onsubmit = function (event) {
+			event.preventDefault();
+
+			// Controleer op lege invoer
+			if (!coinNaam.value.trim()) {
+				resultaatElement.innerHTML =
+					"Vul een geldige coin naam of symbool in.";
+				return;
+			}
+
+			// Normaliseer invoer
+			const userInput = coinNaam.value.toLowerCase();
+
+			// API-aanroep
+			const options = {
+				method: "GET",
+				headers: {
+					accept: "application/json",
+					"x-cg-demo-api-key": import.meta.env.PUBLIC_CG_DEMO_API_KEY, 
+				},
+			};
+
+			fetch(
+				"https://api.coingecko.com/api/v3/coins/list",
+				options
+			)
+				.then((response) => response.json())
+				.then((data) => {
+					// Zoek naar alle munten met de naam of het symbool
+					const results = data.filter(
+						(coin) =>
+							coin.name.toLowerCase() ===
+								userInput ||
+							coin.symbol.toLowerCase() ===
+								userInput
+					);
+
+					// Resultaten verwerken
+					if (results.length > 0) {
+						// Maak een lijst van alle resultaten
+						const resultHTML = results
+							.map(
+								(coin) => `
+									<div>
+										ID: ${coin.id}, Naam: ${coin.name}, Symbool: ${coin.symbol}
+										<button onclick="copyToClipboard('${coin.id}')">Kopieer ID</button>
+									</div>
+								`
+							)
+							.join("<br/>");
+
+						resultaatElement.innerHTML =
+							resultHTML;
+					} else {
+						resultaatElement.innerHTML =
+							"Geen resultaat gevonden";
+					}
+				})
+				.catch((err) => {
+					console.error(err);
+					resultaatElement.innerHTML =
+						"Er is een fout opgetreden tijdens het ophalen van de gegevens.";
+				});
+		};
+	});
+</script>
+
+<script>
+	
+	// Script om het formulier te verwerken en een POST-verzoek te sturen
+	document.getElementById("coinForm").addEventListener(
+		"submit",
+		async function (event) {
+			event.preventDefault(); // Voorkom dat de pagina herlaadt
+
+			// Haal de gegevens op uit het formulier
+			const coinName = (document.getElementById("coinName") as HTMLInputElement).value;
+			const amount = (document.getElementById("amount") as HTMLInputElement).value;
+
+			// API URL en headers
+			const url = "https://backend-portfolio-coin.lloyd-aipassa.deno.net/coins";
+			const headers = {
+				"Content-Type": "application/json",
+			};
+
+			// Maak een POST-verzoek naar de server met de ingevoerde gegevens
+			try {
+				const response = await fetch(url, {
+					method: "POST",
+					headers: headers,
+					body: JSON.stringify({
+						coinName: coinName,
+						amount: amount,
+					}),
+				});
+
+				// Controleer of het verzoek succesvol was
+				if (!response.ok) {
+					throw new Error(
+						`HTTP error! Status: ${response.status}`
+					);
+				}
+
+				// Verwerk het antwoord van de server
+				const data = await response.json();
+				document.getElementById("result").textContent =
+					`Succes! Coin toegevoegd: ${data.coinName}, Prijs: ${data.amount}`;
+			} catch (error) {
+				document.getElementById("result").textContent =
+					`Er is een fout opgetreden: ${error.message}`;
+			}
+		}
+	);
+</script>
+
+
+
+<style>
+
+
+.glass-container {
+    max-width: 800px;
+    width: 90%;
+    margin: 20px auto;
+    padding: 30px;
+    background: rgba(255, 255, 255, 0.1);
+	
+    backdrop-filter: blur(10px);
+    border-radius: 20px;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
+}
+
+h1, h2 {
+    color: #ffffff;
+    text-align: center;
+    margin-bottom: 20px;
+}
+
+.api-key {
+    text-align: center;
+    margin-bottom: 20px;
+    font-style: italic;
+    opacity: 0.7;
+}
+
+.glass-card {
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 15px;
+    padding: 20px;
+    margin-bottom: 20px;
+    backdrop-filter: blur(5px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+form {
+    display: flex;
+    flex-direction: column;
+}
+
+input[type="text"],
+input[type="number"],
+input[type="submit"],
+button {
+    /* width: 100%; */
+    padding: 10px;
+    margin-bottom: 15px;
+    border: none;
+    border-radius: 5px;
+    background: rgba(255, 255, 255, 0.2);
+    color: #ffffff;
+    font-size: 16px;
+}
+
+input[type="submit"],
+button {
+    background: rgba(52, 152, 219, 0.6);
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+}
+
+input[type="submit"]:hover,
+button:hover {
+    background: rgba(52, 152, 219, 0.8);
+}
+
+label {
+    margin-bottom: 5px;
+    font-weight: bold;
+}
+
+.result-display {
+    background: rgba(255, 255, 255, 0.1);
+    padding: 10px;
+    border-radius: 5px;
+    margin-top: 15px;
+}
+
+/* Responsieve aanpassingen */
+@media (max-width: 600px) {
+    .glass-container {
+        padding: 20px;
+    }
+
+    h1 {
+        font-size: 24px;
+    }
+
+    h2 {
+        font-size: 20px;
+    }
+}
+</style>

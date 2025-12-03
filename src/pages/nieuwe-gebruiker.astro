@@ -1,0 +1,176 @@
+---
+export const prerender = true
+import LayoutLogin from "../layouts/LayoutLogin.astro";
+import Background from "../components/Background.astro";
+---
+
+<LayoutLogin title="Login">
+	<Background />
+	<main class="glass-container">
+		<h2>Registratie</h2>
+		<form id="registrationForm">
+			<input
+				type="text"
+				id="email"
+				placeholder="E-mail"
+				required
+			/>
+			<input
+				type="password"
+				id="password"
+				placeholder="Wachtwoord"
+				required
+			/>
+			<button type="submit">Registreren</button>
+		</form>
+
+		<div id="responseMessage"></div>
+	</main>
+</LayoutLogin>
+
+<script>
+	document.getElementById("registrationForm").addEventListener(
+		"submit",
+		async function (event) {
+			event.preventDefault(); // Voorkom dat het formulier de pagina opnieuw laadt
+
+			const email = (
+				document.getElementById(
+					"email"
+				) as HTMLInputElement
+			).value;
+			const password = (
+				document.getElementById(
+					"password"
+				) as HTMLInputElement
+			).value;
+
+			try {
+				const response = await fetch(
+					"http://localhost:3001/users",
+					{
+						method: "POST",
+						headers: {
+							"Content-Type":
+								"application/json",
+						},
+						body: JSON.stringify({
+							email,
+							password,
+						}),
+					}
+				);
+
+				const data = await response.json();
+
+				if (response.ok) {
+					document.getElementById(
+						"responseMessage"
+					).innerText =
+						"Gebruiker succesvol geregistreerd!";
+				} else {
+					document.getElementById(
+						"responseMessage"
+					).innerText =
+						`Fout: ${data.message || "Onbekende fout"}`;
+				}
+			} catch (error) {
+				console.error(
+					"Er is een fout opgetreden:",
+					error
+				);
+				document.getElementById(
+					"responseMessage"
+				).innerText =
+					"Er is een fout opgetreden bij het registreren.";
+			}
+		}
+	);
+</script>
+
+<style>
+	* {
+		margin: 0;
+		box-sizing: border-box;
+	}
+
+	body {
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		justify-content: center;
+	}
+
+	.glass-container {
+		max-width: 600px;
+
+		margin: 20px auto;
+		padding: 30px;
+		background: rgba(255, 255, 255, 0.1);
+
+		backdrop-filter: blur(10px);
+		border-radius: 20px;
+		border: 1px solid rgba(255, 255, 255, 0.2);
+		box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
+	}
+
+	h1,
+	h2 {
+		color: #ffffff;
+		text-align: center;
+		margin-bottom: 20px;
+	}
+
+	input[type="text"],
+	button {
+		/* width: 100%; */
+		padding: 10px;
+		margin-bottom: 15px;
+		border: none;
+		border-radius: 5px;
+		background: rgba(255, 255, 255, 0.2);
+		color: #ffffff;
+		font-size: 16px;
+	}
+
+	input[type="text"],
+	input[type="password"] {
+		width: 100%;
+		padding: 10px;
+		margin: 10px 0;
+		border: 1px solid #ccc;
+		border-radius: 5px;
+		background: rgba(255,255,255,0.2);
+	}
+	button {
+		width: 100%;
+		padding: 10px;
+		background-color: #1d1d1d;
+		color: white;
+		border: none;
+		border-radius: 5px;
+		cursor: pointer;
+	}
+	button:hover {
+		background-color: #2a2626;
+	}
+
+	#responseMessage {
+		color: white;
+	}
+
+	/* Responsieve aanpassingen */
+	@media (max-width: 600px) {
+		.glass-container {
+			padding: 20px;
+		}
+
+		h1 {
+			font-size: 24px;
+		}
+
+		h2 {
+			font-size: 20px;
+		}
+	}
+</style>

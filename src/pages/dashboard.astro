@@ -1,0 +1,556 @@
+---
+// export const prerender = true
+import Layout from "../layouts/Layout.astro";
+import Background from "../components/Background.astro";
+
+async function CoinData() {
+	try {
+		const response = await fetch(
+			"https://backend-portfolio-coin.lloyd-aipassa.deno.net/coins",
+			{
+				method: "GET",
+				headers: {
+					"Content-Type": "application/json",
+				},
+			}
+		);
+
+		if (!response.ok) {
+			throw new Error(
+				`HTTP error! Status: ${response.status}`
+			);
+		}
+
+		const data = await response.json();
+
+		return data;
+	} catch (error) {
+		console.error(
+			"Er is een fout opgetreden tijdens het ophalen van de gegevens:",
+			error
+		);
+	}
+}
+
+// CoinData();
+const DBdata = await CoinData();
+const coinIds = DBdata.map((coin) => coin.coinName);
+
+const options = {
+	method: "GET",
+	headers: {
+		accept: "application/json",
+		"x-cg-demo-api-key": import.meta.env.PUBLIC_CG_DEMO_API_KEY,
+	},
+};
+
+async function fetchCoinData() {
+	const response = await fetch(
+		`https://api.coingecko.com/api/v3/coins/markets?vs_currency=eur&ids=${coinIds}`,
+		options
+	);
+
+	if (!response.ok) {
+		throw new Error(`HTTP error! Status: ${response.status}`);
+	}
+
+	const data = await response.json();
+	return data;
+}
+
+// Haal de coin data op
+const coinData = await fetchCoinData();
+
+// Voeg de arrays samen op basis van `coinName` van DBdata en `id` van coinData
+const mergedData = DBdata.map((dbCoin) => {
+	const matchingCoin = coinData.find(
+		(apiCoin) => apiCoin.id === dbCoin.coinName.toLowerCase()
+	);
+
+	return {
+		coinName: dbCoin.coinName,
+		id: dbCoin._id,
+		amount: dbCoin.amount,
+		current_price: matchingCoin.current_price,
+		name: matchingCoin.name,
+		coinID: matchingCoin.id,
+		image: matchingCoin.image,
+	};
+});
+
+// Bereken het totaalbedrag
+const totalValue = mergedData.reduce((acc, coin) => {
+	return acc + coin.amount * coin.current_price;
+}, 0);
+---
+
+<script>
+	// Functie om te controleren of een gebruiker is ingelogd
+	function checkAuth() {
+		fetch(
+			"https://backend-portfolio-coin.lloyd-aipassa.deno.net/users/check-auth",
+			{
+				credentials: "include", // Belangrijk voor cookies!
+			}
+		)
+			.then((response) => {
+				if (!response.ok) {
+					// Gebruiker is niet ingelogd, redirect naar inlogpagina
+					window.location.href = "/login"; // Zorg ervoor dat je de juiste URL voor de inlogpagina gebruikt
+				}
+				// Als je wilt, kun je hier andere dingen doen met de response als de gebruiker wel is ingelogd
+			})
+			.catch((error) => {
+				console.error("Auth check error:", error);
+				// Bij een fout kun je ook naar de inlogpagina omleiden als je dat wilt
+				window.location.href = "/login"; // Of laat het zo, afhankelijk van je errorbehandeling
+			});
+	}
+
+	// Voer de check uit op de dashboardpagina
+	document.addEventListener("DOMContentLoaded", checkAuth);
+</script>
+
+<Layout title="Dashboard">
+	<Background />
+	<main>
+		<div class="flipkaart-container">
+			<div class="flipkaart">
+				<div class="de-voorkant">
+					<h2>Totale waarde?</h2>
+				</div>
+				<div class="de-achterkant">
+					<h2>
+						€{totalValue.toFixed(2)}
+					</h2>
+				</div>
+			</div>
+		</div>
+		<!-- <h2>Totale waarde:<br /> €{totalValue.toFixed(2)}</h2> -->
+		<ul class="coin-grid">
+			{
+				mergedData.map((coin, index) => (
+					<li class="coin-card">
+						<p class="coin-name">
+							{coin.name}
+						</p>
+						<img
+							class="coin-image"
+							src={coin.image}
+							alt={coin.name}
+						/>
+
+						<p class="coin-total">
+							Totaal: €
+							{(
+								coin.current_price *
+								coin.amount
+							).toFixed(2)}
+						</p>
+						<p class="coin-details">
+							Aantal in bezit:{" "}
+							{coin.amount}
+						</p>
+						{/* <p class="coin-details">
+							Price: €
+							{coin.current_price}
+						</p> */}
+
+						<a
+							class="coin-link"
+							href={coin.coinID}
+						>
+							Info{" "}
+							<img
+								src="/icon-information.svg"
+								width="25"
+								height="25"
+								alt="icon information"
+							/>
+						</a>
+						<button class="update-coin-btn">
+							Update{" "}
+							<img
+								src="/icon-update.svg"
+								width="13"
+								height="13"
+								alt="icon update"
+							/>
+						</button>
+						<button
+							data-coin-id={coin.id}
+							class="delete-coin-btn"
+						>
+							Verwijderen{" "}
+							<img
+								src="/icon-delete.svg"
+								width="20"
+								height="20"
+								alt="delete icon"
+							/>
+						</button>
+
+						<form
+							class="update-form hidden-form"
+							hidden
+							data-coin-name={
+								coin.coinName
+							}
+						>
+							<input
+								type="hidden"
+								name="coinName"
+								value={
+									coin.coinName
+								}
+							/>
+							<label
+								for={`amount-${index}`}
+							>
+								Nieuw Aantal:
+							</label>
+							<input
+								type="number"
+								id={`amount-${index}`}
+								name="amount"
+								required
+								placeholder="Nieuw aantal munten"
+							/>
+							<button
+								class="update-coin-btn submit"
+								type="submit"
+							>
+								Bijwerken
+							</button>
+						</form>
+						<div class="result" />
+					</li>
+				))
+			}
+		</ul>
+	</main>
+</Layout>
+
+<script is:inline src="/javascript/delete.js"></script>
+
+<script>
+	document.querySelectorAll(".update-form").forEach((form) => {
+		form.addEventListener("submit", async function (e) {
+			e.preventDefault();
+			const coinName = this.getAttribute("data-coin-name");
+			const amount = this.querySelector(
+				'input[name="amount"]'
+			).value;
+			const resultDiv = this.nextElementSibling;
+
+			try {
+				const response = await fetch(
+					`https://backend-portfolio-coin.lloyd-aipassa.deno.net/coins/${encodeURIComponent(coinName)}`,
+					{
+						method: "PATCH",
+						headers: {
+							"Content-Type":
+								"application/json",
+						},
+						body: JSON.stringify({
+							amount: Number(amount),
+						}),
+						credentials: "include",
+					}
+				);
+
+				const data = await response.json();
+
+				if (response.ok) {
+					resultDiv.innerHTML = `Succes: Bedrag voor "${data.coinName}" bijgewerkt naar ${data.amount}`;
+					resultDiv.style.color = "green";
+					setTimeout(() => {
+						location.reload();
+					}, 2000);
+				} else {
+					resultDiv.innerHTML = `Fout: ${data.message}`;
+					resultDiv.style.color = "red";
+				}
+			} catch (error) {
+				console.error("Error:", error);
+				resultDiv.innerHTML = `Netwerkfout: ${error.message}`;
+				resultDiv.style.color = "red";
+			}
+		});
+	});
+</script>
+
+<script>
+	document.addEventListener("DOMContentLoaded", () => {
+		const updateButtons =
+			document.querySelectorAll(".update-coin-btn");
+
+		updateButtons.forEach((button, index) => {
+			button.addEventListener("click", () => {
+				// Select the form associated with this button using index or coin name
+				const form = button
+					.closest("li")
+					.querySelector(".update-form");
+
+				// Toggle the "hidden" class for the form
+				if (form) {
+					form.classList.toggle("hidden");
+				}
+			});
+		});
+	});
+</script>
+
+<style>
+	main {
+		margin: auto;
+		padding: 1rem;
+		width: 1200px;
+		max-width: calc(100% - 2rem);
+		color: white;
+		font-size: 20px;
+		line-height: 1.6;
+	}
+
+	h1 {
+		font-size: 4rem;
+		font-weight: 700;
+		line-height: 1;
+		text-align: center;
+		margin-bottom: 1rem;
+	}
+
+	h2 {
+		font-size: 3rem;
+		font-weight: 700;
+		line-height: 1;
+		text-align: center;
+		margin-bottom: 1rem;
+	}
+
+	.coin-grid {
+		display: grid;
+		grid-template-columns: repeat(4, 1fr);
+		gap: 20px;
+		max-width: 1200px;
+		margin: 0 auto;
+		padding: 20px;
+	}
+
+	.flipkaart-container {
+		margin: 12px auto 0;
+		position: relative;
+		width: 400px;
+		height: 100px;
+		perspective: 1000px; /* Added for 3D effect */
+	}
+
+	.flipkaart {
+		position: absolute;
+		width: 100%;
+		height: 100%;
+		transform-style: preserve-3d;
+		transition: transform 0.5s ease;
+	}
+
+	.flipkaart-container:hover .flipkaart {
+		transform: rotateY(180deg);
+	}
+
+	.de-voorkant,
+	.de-achterkant {
+		position: absolute;
+		width: 100%;
+		height: 100%;
+		backface-visibility: hidden;
+		display: flex;
+		justify-content: center;
+		align-items: center;
+		pointer-events: none;
+		background: rgba(255, 255, 255, 0.1);
+		backdrop-filter: blur(10px);
+		border-radius: 20px;
+		border: 1px solid rgba(255, 255, 255, 0.2);
+		box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
+	}
+
+	.de-voorkant {
+	}
+
+	.de-achterkant {
+		transform: rotateY(
+			180deg
+		); /* Rotate back side to stay hidden initially */
+	}
+
+	.update-coin-btn {
+		background-color: #4caf50 !important;
+		margin-bottom: 12px;
+		display: flex;
+		align-items: center;
+		gap: 8px;
+	}
+
+	.submit {
+		margin: 20px auto;
+	}
+
+	.update-form {
+		border: 1px solid #ccc;
+		margin-top: 24px;
+		border-radius: 10px;
+		padding: 24px 0;
+	}
+
+	.hidden {
+		display: block;
+	}
+
+	.coin-card {
+		background: rgba(255, 255, 255, 0.05);
+		backdrop-filter: blur(10px);
+		-webkit-backdrop-filter: blur(10px);
+		border-radius: 10px;
+		border: 1px solid rgba(255, 255, 255, 0.1);
+		padding: 20px;
+		box-shadow: 0 8px 32px 0 rgba(73, 31, 135, 0.37);
+		transition: all 0.3s ease;
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		text-align: center;
+		padding-bottom: 48px;
+	}
+
+	.coin-card:hover {
+		transform: translateY(-5px);
+		box-shadow: 0 8px 32px 0 rgba(133, 67, 219, 0.6);
+		border: 1px solid rgba(255, 255, 255, 0.2);
+	}
+
+	.coin-name {
+		font-size: 1.2rem;
+		font-weight: bold;
+		color: #ffffff;
+		margin-bottom: 10px;
+	}
+
+	.coin-image {
+		width: 64px;
+		height: 64px;
+		margin-bottom: 15px;
+		border-radius: 50%;
+	}
+
+	.coin-details {
+		font-size: 0.9rem;
+		margin-bottom: 5px;
+	}
+
+	.coin-total {
+		font-size: 1.1rem;
+		font-weight: bold;
+		color: #4caf50;
+		margin: 10px 0;
+	}
+
+	.coin-link {
+		border: 1px solid #3498db;
+		padding: 2px 10px;
+		border-radius: 4px;
+		text-transform: uppercase;
+		display: flex;
+		align-items: center;
+		gap: 8px;
+		color: #3498db;
+		text-decoration: none;
+		margin-bottom: 15px;
+		transition: color 0.3s ease;
+		font-size: 16px;
+		font-weight: 600;
+		margin-top: 24px;
+		position: relative;
+		overflow: hidden;
+	}
+
+	a.coin-link::before {
+		content: "";
+		position: absolute;
+		top: 0;
+		left: -100%;
+		width: 100%;
+		height: 100%;
+		background: linear-gradient(
+			120deg,
+			transparent,
+			rgba(255, 255, 255, 0.3),
+			transparent
+		);
+		transition: all 0.4s;
+	}
+
+	a.coin-link:hover::before {
+		left: 100%;
+	}
+
+	.coin-link:hover {
+		color: #2980b9;
+	}
+
+	.delete-coin-btn {
+		display: inline-flex;
+		align-items: center;
+		gap: 8px;
+		background-color: rgba(255, 77, 77, 0.8);
+		color: white;
+		border: none;
+		padding: 8px 12px;
+		border-radius: 5px;
+		font-size: 0.9rem;
+		font-weight: bold;
+		cursor: pointer;
+		transition: all 0.3s ease;
+	}
+
+	.delete-coin-btn:hover {
+		background-color: rgba(255, 77, 77, 1);
+		transform: translateY(-2px);
+	}
+
+	.delete-coin-btn:active {
+		transform: translateY(0);
+	}
+
+	@media (max-width: 1200px) {
+		.coin-grid {
+			grid-template-columns: repeat(3, 1fr);
+		}
+	}
+
+	@media (max-width: 900px) {
+		.coin-grid {
+			grid-template-columns: repeat(2, 1fr);
+		}
+	}
+
+	@media (max-width: 600px) {
+		h2{
+			font-size: 20px;
+		}
+
+		.flipkaart-container {
+		position: relative;
+		width: 220px;
+		height: 80px;
+		perspective: 1000px; /* Added for 3D effect */
+	}
+
+	.de-voorkant,
+	.de-achterkant {
+		padding: 24px;
+	}
+		.coin-grid {
+			grid-template-columns: 1fr;
+		}
+	}
+</style>

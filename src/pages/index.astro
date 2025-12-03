@@ -1,0 +1,59 @@
+---
+export const prerender = true
+import Layout from "../layouts/Layout.astro";
+import Background from "../components/Background.astro";
+---
+<Layout title="Home">
+	<Background />
+	<main>
+		<div class="container">
+			<h1>Mijn persoonlijk portfolio</h1>
+			<div class="img-container">
+				<img
+					class="bitcoin-image"
+					src="/bitcoin-image.webp"
+					alt="bitcoin image"
+				/>
+			</div>
+		</div>
+	</main>
+</Layout>
+<style>
+	 main {
+		margin: auto;
+		padding: 1rem;
+		width: 800px;
+		max-width: calc(100% - 2rem);
+		color: white;
+		font-size: 20px;
+		line-height: 1.6;
+	}
+	.img-container{
+
+		box-shadow: 10px 0px 37px 0px rgba(231,166,26,1);
+		border-radius: 50%;
+		padding: 0px;
+		width: 400px;
+		height: 400px;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		overflow: hidden;
+	}
+
+	.container {
+		display: flex;
+		flex-direction: column;
+		justify-content: center;
+		align-items: center;
+		gap: 50px;
+	}
+
+	img.bitcoin-image {
+		position: relative;
+		width: 100%;
+		border-radius: 50%;
+		z-index: 2;
+	} */
+
+</style>
