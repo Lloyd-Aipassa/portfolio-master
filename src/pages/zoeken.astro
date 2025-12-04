@@ -76,20 +76,16 @@ import Background from '../components/Background.astro';
 			// Normaliseer invoer
 			const userInput = coinNaam.value.toLowerCase();
 
-			// API-aanroep
-			const options = {
-				method: "GET",
-				headers: {
-					accept: "application/json",
-					"x-cg-demo-api-key": import.meta.env.PUBLIC_CG_DEMO_API_KEY, 
-				},
-			};
+			// Fetch via een public endpoint of public API key
+			const apiUrl = `https://api.coingecko.com/api/v3/coins/list?x_cg_pro_api_key=${import.meta.env.PUBLIC_CG_DEMO_API_KEY}`;
 
-			fetch(
-				"https://api.coingecko.com/api/v3/coins/list",
-				options
-			)
-				.then((response) => response.json())
+			fetch(apiUrl)
+				.then((response) => {
+					if (!response.ok) {
+						throw new Error(`API error: ${response.status}`);
+					}
+					return response.json();
+				})
 				.then((data) => {
 					// Zoek naar alle munten met de naam of het symbool
 					const results = data.filter(
@@ -124,7 +120,7 @@ import Background from '../components/Background.astro';
 				.catch((err) => {
 					console.error(err);
 					resultaatElement.innerHTML =
-						"Er is een fout opgetreden tijdens het ophalen van de gegevens.";
+						"Er is een fout opgetreden bij het zoeken. CORS-issue: probeer via een VPN of via de backend.";
 				});
 		};
 	});
