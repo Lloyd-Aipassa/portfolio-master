@@ -127,7 +127,7 @@ import Background from "../components/Background.astro";
 						<img class="coin-image" src="${coin.image}" alt="${coin.name}" />
 						<p class="coin-total">Totaal: €${(coin.current_price * coin.amount).toFixed(2)}</p>
 						<p class="coin-details">Aantal in bezit: ${coin.amount}</p>
-						<a class="coin-link" href="${coin.coinID}">
+						<a class="coin-link" href="/${coin.coinID}">
 							Info
 							<img src="/icon-information.svg" width="25" height="25" alt="icon information" />
 						</a>
