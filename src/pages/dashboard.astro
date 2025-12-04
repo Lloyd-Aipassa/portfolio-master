@@ -53,10 +53,9 @@ import Background from "../components/Background.astro";
 
 <script>
 	// Load coins on page load
-	document.addEventListener("DOMContentLoaded", async function () {
+	async function loadCoins() {
 		const coinGrid = document.getElementById("coinGrid");
 		const totalValueDisplay = document.getElementById("totalValueDisplay");
-		const apiKey = "CG_DEMO_API_KEY"; // Placeholder, will be replaced by Astro
 
 		try {
 			// Fetch coins from backend
@@ -132,19 +131,19 @@ import Background from "../components/Background.astro";
 							Info
 							<img src="/icon-information.svg" width="25" height="25" alt="icon information" />
 						</a>
-						<button class="update-coin-btn">
+						<button type="button" class="update-coin-btn" data-action="toggle-form">
 							Update
 							<img src="/icon-update.svg" width="13" height="13" alt="icon update" />
 						</button>
-						<button class="delete-coin-btn" data-coin-id="${coin.id}">
+						<button type="button" class="delete-coin-btn" data-coin-id="${coin.id}">
 							Verwijderen
 							<img src="/icon-delete.svg" width="20" height="20" alt="delete icon" />
 						</button>
-						<form class="update-form hidden-form" hidden data-coin-name="${coin.coinName}">
+						<form class="update-form" style="display: none;" data-coin-name="${coin.coinName}">
 							<input type="hidden" name="coinName" value="${coin.coinName}" />
 							<label for="amount-${index}">Nieuw Aantal:</label>
 							<input type="number" id="amount-${index}" name="amount" required placeholder="Nieuw aantal munten" />
-							<button class="update-coin-btn submit" type="submit">Bijwerken</button>
+							<button type="submit" class="update-coin-btn submit">Bijwerken</button>
 						</form>
 						<div class="result"></div>
 					</li>
@@ -152,106 +151,99 @@ import Background from "../components/Background.astro";
 				)
 				.join("");
 
-			// Reattach event listeners for update forms
-			document.querySelectorAll(".update-form").forEach((form) => {
-				form.addEventListener("submit", handleUpdateSubmit);
+			// Attach event listeners using event delegation
+			coinGrid.addEventListener("click", (e) => {
+				// Handle update button clicks
+				if (e.target.closest(".update-coin-btn[data-action='toggle-form']")) {
+					const card = e.target.closest(".coin-card");
+					const form = card.querySelector(".update-form");
+					if (form) {
+						form.style.display = form.style.display === "none" ? "block" : "none";
+					}
+				}
+
+				// Handle delete button clicks
+				if (e.target.closest(".delete-coin-btn")) {
+					const button = e.target.closest(".delete-coin-btn");
+					const result = confirm("Wil je deze coin verwijderen?");
+					if (result) {
+						const coinId = button.dataset.coinId;
+						if (!coinId) {
+							console.error("No coinId found");
+							return;
+						}
+
+						fetch(`https://backend-portfolio-coin.lloyd-aipassa.deno.net/coins/${coinId}`, {
+							method: "DELETE",
+							headers: {
+								"Content-Type": "application/json",
+							},
+						})
+							.then((response) => {
+								if (!response.ok) {
+									throw new Error(`Error: ${response.status}`);
+								}
+								location.reload();
+							})
+							.catch((error) => {
+								console.error("Error deleting coin:", error);
+								alert("Fout bij verwijderen: " + error.message);
+							});
+					}
+				}
 			});
 
-			// Reattach event listeners for update buttons (only the non-submit ones)
-			document.querySelectorAll(".coin-card .update-coin-btn:not(.submit)").forEach((button) => {
-				button.addEventListener("click", handleUpdateButtonClick);
+			// Handle form submissions using event delegation
+			coinGrid.addEventListener("submit", (e) => {
+				if (e.target.classList.contains("update-form")) {
+					e.preventDefault();
+					const form = e.target;
+					const coinName = form.getAttribute("data-coin-name");
+					const amount = form.querySelector('input[name="amount"]').value;
+					const resultDiv = form.nextElementSibling;
+
+					fetch(`https://backend-portfolio-coin.lloyd-aipassa.deno.net/coins/${encodeURIComponent(coinName)}`, {
+						method: "PATCH",
+						headers: {
+							"Content-Type": "application/json",
+						},
+						body: JSON.stringify({
+							amount: Number(amount),
+						}),
+						credentials: "include",
+					})
+						.then((response) => {
+							const isOk = response.ok;
+							return response.json().then((data) => ({ isOk, data }));
+						})
+						.then(({ isOk, data }) => {
+							if (isOk) {
+								resultDiv.innerHTML = `Succes: Bedrag voor "${data.coinName}" bijgewerkt naar ${data.amount}`;
+								resultDiv.style.color = "green";
+								setTimeout(() => {
+									location.reload();
+								}, 2000);
+							} else {
+								resultDiv.innerHTML = `Fout: ${data.message}`;
+								resultDiv.style.color = "red";
+							}
+						})
+						.catch((error) => {
+							resultDiv.innerHTML = `Netwerkfout: ${error.message}`;
+							resultDiv.style.color = "red";
+						});
+				}
 			});
 
-			// Reattach event listeners for delete buttons
-			document.querySelectorAll(".delete-coin-btn").forEach((button) => {
-				button.addEventListener("click", handleDeleteClick);
-			});
 		} catch (error) {
 			console.error("Error loading coins:", error);
 			coinGrid.innerHTML = `<li style="grid-column: 1/-1; text-align: center; padding: 40px; color: #fff;">
 				<p>Fout bij het laden van coins: ${error.message}</p>
 			</li>`;
 		}
-	});
-
-	function handleUpdateSubmit(e) {
-		e.preventDefault();
-		const coinName = this.getAttribute("data-coin-name");
-		const amount = this.querySelector('input[name="amount"]').value;
-		const resultDiv = this.nextElementSibling;
-
-		fetch(`https://backend-portfolio-coin.lloyd-aipassa.deno.net/coins/${encodeURIComponent(coinName)}`, {
-			method: "PATCH",
-			headers: {
-				"Content-Type": "application/json",
-			},
-			body: JSON.stringify({
-				amount: Number(amount),
-			}),
-			credentials: "include",
-		})
-			.then((response) => {
-				const isOk = response.ok;
-				return response.json().then((data) => ({ isOk, data }));
-			})
-			.then(({ isOk, data }) => {
-				if (isOk) {
-					resultDiv.innerHTML = `Succes: Bedrag voor "${data.coinName}" bijgewerkt naar ${data.amount}`;
-					resultDiv.style.color = "green";
-					setTimeout(() => {
-						location.reload();
-					}, 2000);
-				} else {
-					resultDiv.innerHTML = `Fout: ${data.message}`;
-					resultDiv.style.color = "red";
-				}
-			})
-			.catch((error) => {
-				resultDiv.innerHTML = `Netwerkfout: ${error.message}`;
-				resultDiv.style.color = "red";
-			});
 	}
 
-	function handleUpdateButtonClick() {
-		const form = this.closest("li").querySelector(".update-form");
-		if (form) {
-			form.classList.toggle("hidden");
-		}
-	}
-
-	function handleDeleteClick(event) {
-		const result = confirm("Wil je deze coin verwijderen?");
-		if (result) {
-			const button = event.currentTarget;
-			const coinId = button.dataset.coinId;
-
-			if (!coinId) {
-				console.error("No coinId found on the clicked element");
-				return;
-			}
-
-			try {
-				fetch(`https://backend-portfolio-coin.lloyd-aipassa.deno.net/coins/${coinId}`, {
-					method: "DELETE",
-					headers: {
-						"Content-Type": "application/json",
-					},
-				})
-					.then((response) => {
-						if (!response.ok) {
-							throw new Error(`Error: ${response.status}`);
-						}
-						location.reload();
-					})
-					.catch((error) => {
-						console.error("Error deleting coin:", error);
-						alert("Fout bij verwijderen: " + error.message);
-					});
-			} catch (error) {
-				console.error("Error deleting coin:", error);
-			}
-		}
-	}
+	document.addEventListener("DOMContentLoaded", loadCoins);
 </script>
 
 
