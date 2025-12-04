@@ -1,87 +1,6 @@
 ---
-// export const prerender = true
 import Layout from "../layouts/Layout.astro";
 import Background from "../components/Background.astro";
-
-async function CoinData() {
-	try {
-		const response = await fetch(
-			"https://backend-portfolio-coin.lloyd-aipassa.deno.net/coins",
-			{
-				method: "GET",
-				headers: {
-					"Content-Type": "application/json",
-				},
-			}
-		);
-
-		if (!response.ok) {
-			throw new Error(
-				`HTTP error! Status: ${response.status}`
-			);
-		}
-
-		const data = await response.json();
-
-		return data;
-	} catch (error) {
-		console.error(
-			"Er is een fout opgetreden tijdens het ophalen van de gegevens:",
-			error
-		);
-	}
-}
-
-// CoinData();
-const DBdata = await CoinData();
-const coinIds = DBdata.map((coin) => coin.coinName);
-
-const options = {
-	method: "GET",
-	headers: {
-		accept: "application/json",
-		"x-cg-demo-api-key": import.meta.env.PUBLIC_CG_DEMO_API_KEY,
-	},
-};
-
-async function fetchCoinData() {
-	const response = await fetch(
-		`https://api.coingecko.com/api/v3/coins/markets?vs_currency=eur&ids=${coinIds}`,
-		options
-	);
-
-	if (!response.ok) {
-		throw new Error(`HTTP error! Status: ${response.status}`);
-	}
-
-	const data = await response.json();
-	return data;
-}
-
-// Haal de coin data op
-const coinData = await fetchCoinData();
-
-// Voeg de arrays samen op basis van `coinName` van DBdata en `id` van coinData
-const mergedData = DBdata.map((dbCoin) => {
-	const matchingCoin = coinData.find(
-		(apiCoin) => apiCoin.id === dbCoin.coinName.toLowerCase()
-	);
-
-	return {
-		coinName: dbCoin.coinName,
-		id: dbCoin._id,
-		amount: dbCoin.amount,
-		current_price: matchingCoin.current_price,
-		name: matchingCoin.name,
-		coinID: matchingCoin.id,
-		image: matchingCoin.image,
-	};
-});
-
-// Bereken het totaalbedrag
-const totalValue = mergedData.reduce((acc, coin) => {
-	return acc + coin.amount * coin.current_price;
-}, 0);
 ---
 
 <script>
@@ -120,113 +39,14 @@ const totalValue = mergedData.reduce((acc, coin) => {
 					<h2>Totale waarde?</h2>
 				</div>
 				<div class="de-achterkant">
-					<h2>
-						€{totalValue.toFixed(2)}
-					</h2>
+					<h2 id="totalValueDisplay">€0,00</h2>
 				</div>
 			</div>
 		</div>
-		<!-- <h2>Totale waarde:<br /> €{totalValue.toFixed(2)}</h2> -->
-		<ul class="coin-grid">
-			{
-				mergedData.map((coin, index) => (
-					<li class="coin-card">
-						<p class="coin-name">
-							{coin.name}
-						</p>
-						<img
-							class="coin-image"
-							src={coin.image}
-							alt={coin.name}
-						/>
-
-						<p class="coin-total">
-							Totaal: €
-							{(
-								coin.current_price *
-								coin.amount
-							).toFixed(2)}
-						</p>
-						<p class="coin-details">
-							Aantal in bezit:{" "}
-							{coin.amount}
-						</p>
-						{/* <p class="coin-details">
-							Price: €
-							{coin.current_price}
-						</p> */}
-
-						<a
-							class="coin-link"
-							href={coin.coinID}
-						>
-							Info{" "}
-							<img
-								src="/icon-information.svg"
-								width="25"
-								height="25"
-								alt="icon information"
-							/>
-						</a>
-						<button class="update-coin-btn">
-							Update{" "}
-							<img
-								src="/icon-update.svg"
-								width="13"
-								height="13"
-								alt="icon update"
-							/>
-						</button>
-						<button
-							data-coin-id={coin.id}
-							class="delete-coin-btn"
-						>
-							Verwijderen{" "}
-							<img
-								src="/icon-delete.svg"
-								width="20"
-								height="20"
-								alt="delete icon"
-							/>
-						</button>
-
-						<form
-							class="update-form hidden-form"
-							hidden
-							data-coin-name={
-								coin.coinName
-							}
-						>
-							<input
-								type="hidden"
-								name="coinName"
-								value={
-									coin.coinName
-								}
-							/>
-							<label
-								for={`amount-${index}`}
-							>
-								Nieuw Aantal:
-							</label>
-							<input
-								type="number"
-								id={`amount-${index}`}
-								name="amount"
-								required
-								placeholder="Nieuw aantal munten"
-							/>
-							<button
-								class="update-coin-btn submit"
-								type="submit"
-							>
-								Bijwerken
-							</button>
-						</form>
-						<div class="result" />
-					</li>
-				))
-			}
+		<ul class="coin-grid" id="coinGrid">
+			<li style="grid-column: 1/-1; text-align: center; padding: 40px; color: #fff;">
+				<p>Coins laden...</p>
+			</li>
 		</ul>
 	</main>
 </Layout>
@@ -234,34 +54,145 @@ const totalValue = mergedData.reduce((acc, coin) => {
 <script is:inline src="/javascript/delete.js"></script>
 
 <script>
-	document.querySelectorAll(".update-form").forEach((form) => {
-		form.addEventListener("submit", async function (e) {
-			e.preventDefault();
-			const coinName = this.getAttribute("data-coin-name");
-			const amount = this.querySelector(
-				'input[name="amount"]'
-			).value;
-			const resultDiv = this.nextElementSibling;
+	// Load coins on page load
+	document.addEventListener("DOMContentLoaded", async function () {
+		const coinGrid = document.getElementById("coinGrid");
+		const totalValueDisplay = document.getElementById("totalValueDisplay");
+		const apiKey = "CG_DEMO_API_KEY"; // Placeholder, will be replaced by Astro
 
-			try {
-				const response = await fetch(
-					`https://backend-portfolio-coin.lloyd-aipassa.deno.net/coins/${encodeURIComponent(coinName)}`,
-					{
-						method: "PATCH",
-						headers: {
-							"Content-Type":
-								"application/json",
-						},
-						body: JSON.stringify({
-							amount: Number(amount),
-						}),
-						credentials: "include",
-					}
+		try {
+			// Fetch coins from backend
+			const coinsResponse = await fetch("https://backend-portfolio-coin.lloyd-aipassa.deno.net/coins", {
+				method: "GET",
+				headers: {
+					"Content-Type": "application/json",
+				},
+				credentials: "include",
+			});
+
+			if (!coinsResponse.ok) {
+				throw new Error(`Backend error: ${coinsResponse.status}`);
+			}
+
+			const dbCoins = await coinsResponse.json();
+			const coinIds = dbCoins.map((coin) => coin.coinName).join(",");
+
+			// Fetch coin data from CoinGecko
+			const marketResponse = await fetch(
+				`https://api.coingecko.com/api/v3/coins/markets?vs_currency=eur&ids=${coinIds}`,
+				{
+					method: "GET",
+					headers: {
+						accept: "application/json",
+					},
+				}
+			);
+
+			if (!marketResponse.ok) {
+				throw new Error(`CoinGecko error: ${marketResponse.status}`);
+			}
+
+			const coinData = await marketResponse.json();
+
+			// Merge data
+			const mergedData = dbCoins.map((dbCoin) => {
+				const matchingCoin = coinData.find(
+					(apiCoin) => apiCoin.id === dbCoin.coinName.toLowerCase()
 				);
 
-				const data = await response.json();
+				if (!matchingCoin) return null;
 
-				if (response.ok) {
+				return {
+					coinName: dbCoin.coinName,
+					id: dbCoin._id,
+					amount: dbCoin.amount,
+					current_price: matchingCoin.current_price,
+					name: matchingCoin.name,
+					coinID: matchingCoin.id,
+					image: matchingCoin.image,
+				};
+			}).filter(Boolean);
+
+			// Calculate total value
+			const totalValue = mergedData.reduce((acc, coin) => {
+				return acc + coin.amount * coin.current_price;
+			}, 0);
+
+			// Update total value display
+			totalValueDisplay.textContent = `€${totalValue.toFixed(2)}`;
+
+			// Render coins
+			coinGrid.innerHTML = mergedData
+				.map(
+					(coin, index) => `
+					<li class="coin-card">
+						<p class="coin-name">${coin.name}</p>
+						<img class="coin-image" src="${coin.image}" alt="${coin.name}" />
+						<p class="coin-total">Totaal: €${(coin.current_price * coin.amount).toFixed(2)}</p>
+						<p class="coin-details">Aantal in bezit: ${coin.amount}</p>
+						<a class="coin-link" href="${coin.coinID}">
+							Info
+							<img src="/icon-information.svg" width="25" height="25" alt="icon information" />
+						</a>
+						<button class="update-coin-btn">
+							Update
+							<img src="/icon-update.svg" width="13" height="13" alt="icon update" />
+						</button>
+						<button class="delete-coin-btn" data-coin-id="${coin.id}">
+							Verwijderen
+							<img src="/icon-delete.svg" width="20" height="20" alt="delete icon" />
+						</button>
+						<form class="update-form hidden-form" hidden data-coin-name="${coin.coinName}">
+							<input type="hidden" name="coinName" value="${coin.coinName}" />
+							<label for="amount-${index}">Nieuw Aantal:</label>
+							<input type="number" id="amount-${index}" name="amount" required placeholder="Nieuw aantal munten" />
+							<button class="update-coin-btn submit" type="submit">Bijwerken</button>
+						</form>
+						<div class="result"></div>
+					</li>
+				`
+				)
+				.join("");
+
+			// Reattach event listeners for update forms
+			document.querySelectorAll(".update-form").forEach((form) => {
+				form.addEventListener("submit", handleUpdateSubmit);
+			});
+
+			// Reattach event listeners for update buttons
+			document.querySelectorAll(".update-coin-btn").forEach((button) => {
+				button.addEventListener("click", handleUpdateButtonClick);
+			});
+		} catch (error) {
+			console.error("Error loading coins:", error);
+			coinGrid.innerHTML = `<li style="grid-column: 1/-1; text-align: center; padding: 40px; color: #fff;">
+				<p>Fout bij het laden van coins: ${error.message}</p>
+			</li>`;
+		}
+	});
+
+	function handleUpdateSubmit(e) {
+		e.preventDefault();
+		const coinName = this.getAttribute("data-coin-name");
+		const amount = this.querySelector('input[name="amount"]').value;
+		const resultDiv = this.nextElementSibling;
+
+		fetch(`https://backend-portfolio-coin.lloyd-aipassa.deno.net/coins/${encodeURIComponent(coinName)}`, {
+			method: "PATCH",
+			headers: {
+				"Content-Type": "application/json",
+			},
+			body: JSON.stringify({
+				amount: Number(amount),
+			}),
+			credentials: "include",
+		})
+			.then((response) => {
+				const isOk = response.ok;
+				return response.json().then((data) => ({ isOk, data }));
+			})
+			.then(({ isOk, data }) => {
+				if (isOk) {
 					resultDiv.innerHTML = `Succes: Bedrag voor "${data.coinName}" bijgewerkt naar ${data.amount}`;
 					resultDiv.style.color = "green";
 					setTimeout(() => {
@@ -271,35 +202,21 @@ const totalValue = mergedData.reduce((acc, coin) => {
 					resultDiv.innerHTML = `Fout: ${data.message}`;
 					resultDiv.style.color = "red";
 				}
-			} catch (error) {
-				console.error("Error:", error);
+			})
+			.catch((error) => {
 				resultDiv.innerHTML = `Netwerkfout: ${error.message}`;
 				resultDiv.style.color = "red";
-			}
-		});
-	});
-</script>
-
-<script>
-	document.addEventListener("DOMContentLoaded", () => {
-		const updateButtons =
-			document.querySelectorAll(".update-coin-btn");
-
-		updateButtons.forEach((button, index) => {
-			button.addEventListener("click", () => {
-				// Select the form associated with this button using index or coin name
-				const form = button
-					.closest("li")
-					.querySelector(".update-form");
-
-				// Toggle the "hidden" class for the form
-				if (form) {
-					form.classList.toggle("hidden");
-				}
 			});
-		});
-	});
+	}
+
+	function handleUpdateButtonClick() {
+		const form = this.closest("li").querySelector(".update-form");
+		if (form) {
+			form.classList.toggle("hidden");
+		}
+	}
 </script>
+
 
 <style>
 	main {
