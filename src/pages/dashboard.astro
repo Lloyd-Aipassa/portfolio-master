@@ -122,28 +122,28 @@ import Background from "../components/Background.astro";
 			coinGrid.innerHTML = mergedData
 				.map(
 					(coin, index) => `
-					<li class="coin-card">
-						<p class="coin-name">${coin.name}</p>
-						<img class="coin-image" src="${coin.image}" alt="${coin.name}" />
-						<p class="coin-total">Totaal: €${(coin.current_price * coin.amount).toFixed(2)}</p>
-						<p class="coin-details">Aantal in bezit: ${coin.amount}</p>
-						<a class="coin-link" href="/${coin.coinID}">
+					<li class="coin-card" style="background: rgba(255, 255, 255, 0.05); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); border-radius: 10px; border: 1px solid rgba(255, 255, 255, 0.1); padding: 20px 20px 48px 20px; box-shadow: 0 8px 32px 0 rgba(73, 31, 135, 0.37); transition: all 0.3s ease; display: flex; flex-direction: column; align-items: center; text-align: center; min-height: 400px; justify-content: space-between;">
+						<p class="coin-name" style="font-size: 1.2rem; font-weight: bold; color: #ffffff; margin-bottom: 10px;">${coin.name}</p>
+						<img class="coin-image" src="${coin.image}" alt="${coin.name}" style="width: 64px; height: 64px; margin-bottom: 15px; border-radius: 50%;" />
+						<p class="coin-total" style="font-size: 1.1rem; font-weight: bold; color: #4caf50; margin: 10px 0;">Totaal: €${(coin.current_price * coin.amount).toFixed(2)}</p>
+						<p class="coin-details" style="font-size: 0.9rem; margin-bottom: 5px;">Aantal in bezit: ${coin.amount}</p>
+						<a class="coin-link" href="/${coin.coinID}" style="border: 1px solid #3498db; padding: 2px 10px; border-radius: 4px; text-transform: uppercase; display: flex; align-items: center; gap: 8px; color: #3498db; text-decoration: none; margin-bottom: 15px; transition: color 0.3s ease; font-size: 16px; font-weight: 600; margin-top: 24px; position: relative; overflow: hidden;">
 							Info
 							<img src="/icon-information.svg" width="25" height="25" alt="icon information" />
 						</a>
-						<button type="button" class="update-coin-btn" data-action="toggle-form">
+						<button type="button" class="update-coin-btn" data-action="toggle-form" style="background-color: #4caf50 !important; margin-bottom: 12px; display: flex; align-items: center; gap: 8px; border: none; padding: 8px 12px; border-radius: 5px; color: white; font-weight: bold; cursor: pointer; transition: all 0.3s ease;">
 							Update
 							<img src="/icon-update.svg" width="13" height="13" alt="icon update" />
 						</button>
-						<button type="button" class="delete-coin-btn" data-coin-id="${coin.id}">
+						<button type="button" class="delete-coin-btn" data-coin-id="${coin.id}" style="display: inline-flex; align-items: center; gap: 8px; background-color: rgba(255, 77, 77, 0.8); color: white; border: none; padding: 8px 12px; border-radius: 5px; font-size: 0.9rem; font-weight: bold; cursor: pointer; transition: all 0.3s ease;">
 							Verwijderen
 							<img src="/icon-delete.svg" width="20" height="20" alt="delete icon" />
 						</button>
-						<form class="update-form" style="display: none;" data-coin-name="${coin.coinName}">
+						<form class="update-form" style="display: none; border: 1px solid rgba(255, 255, 255, 0.2); margin-top: 24px; border-radius: 10px; padding: 20px; background: rgba(255, 255, 255, 0.05); flex-direction: column; gap: 12px;" data-coin-name="${coin.coinName}">
 							<input type="hidden" name="coinName" value="${coin.coinName}" />
-							<label for="amount-${index}">Nieuw Aantal:</label>
-							<input type="number" id="amount-${index}" name="amount" required placeholder="Nieuw aantal munten" />
-							<button type="submit" class="update-coin-btn submit">Bijwerken</button>
+							<label for="amount-${index}" style="color: #ffffff; font-size: 0.9rem; margin-bottom: 5px; display: block;">Nieuw Aantal:</label>
+							<input type="number" id="amount-${index}" name="amount" required placeholder="Nieuw aantal munten" style="background: rgba(255, 255, 255, 0.1); border: 1px solid rgba(255, 255, 255, 0.2); border-radius: 5px; padding: 10px; color: #ffffff; font-size: 1rem; transition: all 0.3s ease;" />
+							<button type="submit" class="update-coin-btn submit" style="background-color: #4caf50 !important; margin: 20px auto; display: flex; align-items: center; gap: 8px; border: none; padding: 8px 12px; border-radius: 5px; color: white; font-weight: bold; cursor: pointer; transition: all 0.3s ease;">Bijwerken</button>
 						</form>
 						<div class="result"></div>
 					</li>
@@ -245,7 +245,6 @@ import Background from "../components/Background.astro";
 
 	document.addEventListener("DOMContentLoaded", loadCoins);
 </script>
-
 
 <style>
 	main {
