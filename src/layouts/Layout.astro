@@ -183,11 +183,35 @@ const { title } = Astro.props;
 	@media (max-width: 720px) {
 		header {
 			padding: 20px 24px;
-
+			flex-direction: column;
+			gap: 20px;
 		}
 
 		header img {
 			width: 50px;
+		}
+
+		header ul {
+			flex-direction: column;
+			width: 100%;
+			gap: 10px;
+			height: auto;
+		}
+
+		header ul li {
+			width: 100%;
+		}
+
+		header ul li a,
+		header ul li button {
+			display: block;
+			width: 100%;
+			text-align: center;
+			padding: 10px;
+		}
+
+		header ul li button {
+			padding: 10px 15px;
 		}
 	}
 </style>
