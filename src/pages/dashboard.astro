@@ -51,8 +51,6 @@ import Background from "../components/Background.astro";
 	</main>
 </Layout>
 
-<script is:inline src="/javascript/delete.js"></script>
-
 <script>
 	// Load coins on page load
 	document.addEventListener("DOMContentLoaded", async function () {
@@ -159,9 +157,14 @@ import Background from "../components/Background.astro";
 				form.addEventListener("submit", handleUpdateSubmit);
 			});
 
-			// Reattach event listeners for update buttons
-			document.querySelectorAll(".update-coin-btn").forEach((button) => {
+			// Reattach event listeners for update buttons (only the non-submit ones)
+			document.querySelectorAll(".coin-card .update-coin-btn:not(.submit)").forEach((button) => {
 				button.addEventListener("click", handleUpdateButtonClick);
+			});
+
+			// Reattach event listeners for delete buttons
+			document.querySelectorAll(".delete-coin-btn").forEach((button) => {
+				button.addEventListener("click", handleDeleteClick);
 			});
 		} catch (error) {
 			console.error("Error loading coins:", error);
@@ -213,6 +216,40 @@ import Background from "../components/Background.astro";
 		const form = this.closest("li").querySelector(".update-form");
 		if (form) {
 			form.classList.toggle("hidden");
+		}
+	}
+
+	function handleDeleteClick(event) {
+		const result = confirm("Wil je deze coin verwijderen?");
+		if (result) {
+			const button = event.currentTarget;
+			const coinId = button.dataset.coinId;
+
+			if (!coinId) {
+				console.error("No coinId found on the clicked element");
+				return;
+			}
+
+			try {
+				fetch(`https://backend-portfolio-coin.lloyd-aipassa.deno.net/coins/${coinId}`, {
+					method: "DELETE",
+					headers: {
+						"Content-Type": "application/json",
+					},
+				})
+					.then((response) => {
+						if (!response.ok) {
+							throw new Error(`Error: ${response.status}`);
+						}
+						location.reload();
+					})
+					.catch((error) => {
+						console.error("Error deleting coin:", error);
+						alert("Fout bij verwijderen: " + error.message);
+					});
+			} catch (error) {
+				console.error("Error deleting coin:", error);
+			}
 		}
 	}
 </script>
@@ -320,7 +357,7 @@ import Background from "../components/Background.astro";
 	}
 
 	.hidden {
-		display: block;
+		display: none !important;
 	}
 
 	.coin-card {
@@ -451,21 +488,22 @@ import Background from "../components/Background.astro";
 	}
 
 	@media (max-width: 600px) {
-		h2{
+		h2 {
 			font-size: 20px;
 		}
 
 		.flipkaart-container {
-		position: relative;
-		width: 220px;
-		height: 80px;
-		perspective: 1000px; /* Added for 3D effect */
-	}
+			position: relative;
+			width: 220px;
+			height: 80px;
+			perspective: 1000px;
+		}
 
-	.de-voorkant,
-	.de-achterkant {
-		padding: 24px;
-	}
+		.de-voorkant,
+		.de-achterkant {
+			padding: 24px;
+		}
+
 		.coin-grid {
 			grid-template-columns: 1fr;
 		}

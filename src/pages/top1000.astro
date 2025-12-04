@@ -7,8 +7,8 @@ import Background from "../components/Background.astro";
 ---
 <script>
 	const fetchTopCoins = async () => {
-		const url = 'https://api.coingecko.com/api/v3/coins/markets';
-		const vs_currency = 'eur'; // Changed to Euro
+		const backendUrl = 'https://backend-portfolio-coin.lloyd-aipassa.deno.net/top-coins';
+		const vs_currency = 'eur';
 		const order = 'market_cap_desc';
 		const per_page = 250;
 		let topCoins = [];
@@ -18,8 +18,13 @@ import Background from "../components/Background.astro";
 		try {
 			for (let page = 1; page <= 4; page++) {
 				const response = await fetch(
-					`${url}?vs_currency=${vs_currency}&order=${order}&per_page=${per_page}&page=${page}`
+					`${backendUrl}?vs_currency=${vs_currency}&order=${order}&per_page=${per_page}&page=${page}`
 				);
+
+				if (!response.ok) {
+					throw new Error(`Backend error: ${response.status}`);
+				}
+
 				const data = await response.json();
 				topCoins = [...topCoins, ...data];
 			}
@@ -34,19 +39,19 @@ import Background from "../components/Background.astro";
 					<td style="text-align: center;">${index + 1}</td>
 					<td style="text-align: center; padding-top: 2px"><img src="${coin.image}" alt="${coin.name}" width="18" height="18"></td>
 					<td style="text-align: center;">${coin.symbol.toUpperCase()}</td>
-					<td style="text-align: center;">€${coin.current_price.toLocaleString()}</td> <!-- Updated currency symbol -->
-					<td style="text-align: center;">€${coin.market_cap.toLocaleString()}</td> <!-- Updated currency symbol -->
+					<td style="text-align: center;">€${coin.current_price.toLocaleString()}</td>
+					<td style="text-align: center;">€${coin.market_cap.toLocaleString()}</td>
 				`;
 
 				tableBody.appendChild(row);
 			});
 		} catch (error) {
 			console.error('Error fetching top coins:', error);
-			document.getElementById('loadingMessage').textContent = 'An error occurred while loading data.';
+			document.getElementById('loadingMessage').textContent = 'Fout bij laden data. Zorg ervoor dat je backend draait.';
 		}
 	};
 
-	document.addEventListener('DOMContentLoaded', fetchTopCoins); 
+	document.addEventListener('DOMContentLoaded', fetchTopCoins);
 </script>
 
 <Layout title="Home">
