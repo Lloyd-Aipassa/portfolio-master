@@ -76,13 +76,11 @@ import Background from '../components/Background.astro';
 			// Normaliseer invoer
 			const userInput = coinNaam.value.toLowerCase();
 
-			// Fetch via een public endpoint of public API key
-			const apiUrl = `https://api.coingecko.com/api/v3/coins/list?x_cg_pro_api_key=${import.meta.env.PUBLIC_CG_DEMO_API_KEY}`;
-
-			fetch(apiUrl)
+			// Fetch via backend endpoint (no CORS issues)
+			fetch("https://backend-portfolio-coin.lloyd-aipassa.deno.net/search/coins")
 				.then((response) => {
 					if (!response.ok) {
-						throw new Error(`API error: ${response.status}`);
+						throw new Error(`Backend API error: ${response.status}`);
 					}
 					return response.json();
 				})
@@ -120,7 +118,7 @@ import Background from '../components/Background.astro';
 				.catch((err) => {
 					console.error(err);
 					resultaatElement.innerHTML =
-						"Er is een fout opgetreden bij het zoeken. CORS-issue: probeer via een VPN of via de backend.";
+						"Er is een fout opgetreden bij het zoeken. Zorg ervoor dat je backend draait.";
 				});
 		};
 	});
