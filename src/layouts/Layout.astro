@@ -23,8 +23,8 @@ const { title } = Astro.props;
 	<body>
 		<header>
 			<a href="/"><img class="logo" src="/logo-portfolio.jpg" alt="logo" /></a>
-		
-			<ul>
+			<button id="hamburger" class="hamburger">☰</button>
+			<ul id="mobileMenu" class="mobile-menu">
 				<li>
 					<a href="/top1000">Top 1000</a>
 				</li>
@@ -41,6 +41,24 @@ const { title } = Astro.props;
 		</header>
 		<slot />
 		<script is:inline src="/javascript/logout.js"></script>
+		<script is:inline>
+			const hamburger = document.getElementById('hamburger');
+			const mobileMenu = document.getElementById('mobileMenu');
+
+			hamburger.addEventListener('click', () => {
+				mobileMenu.classList.toggle('open');
+				hamburger.classList.toggle('active');
+			});
+
+			// Close menu when a link is clicked
+			const menuLinks = mobileMenu.querySelectorAll('a, button');
+			menuLinks.forEach(link => {
+				link.addEventListener('click', () => {
+					mobileMenu.classList.remove('open');
+					hamburger.classList.remove('active');
+				});
+			});
+		</script>
 	</body>
 </html>
 <style is:global>
@@ -180,38 +198,85 @@ const { title } = Astro.props;
 			0 0 10px rgba(255, 77, 77, 0.5);
 	}
 
+	.hamburger {
+		display: none;
+		background: none;
+		border: none;
+		color: white;
+		font-size: 28px;
+		cursor: pointer;
+		transition: all 0.3s ease;
+	}
+
+	.hamburger.active {
+		color: #ff4d4d;
+	}
+
+	.mobile-menu {
+		display: flex !important;
+	}
+
 	@media (max-width: 720px) {
 		header {
 			padding: 20px 24px;
-			flex-direction: column;
-			gap: 20px;
+			position: relative;
 		}
 
 		header img {
 			width: 50px;
 		}
 
-		header ul {
-			flex-direction: column;
-			width: 100%;
-			gap: 10px;
-			height: auto;
-		}
-
-		header ul li {
-			width: 100%;
-		}
-
-		header ul li a,
-		header ul li button {
+		.hamburger {
 			display: block;
+		}
+
+		.mobile-menu {
+			position: fixed;
+			top: 0;
+			right: -100%;
+			width: 70%;
+			height: 100vh;
+			background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+			flex-direction: column;
+			padding-top: 80px;
+			padding-left: 30px;
+			padding-right: 30px;
+			gap: 20px;
+			list-style: none;
+			transition: right 0.3s ease;
+			z-index: 1000;
+		}
+
+		.mobile-menu.open {
+			right: 0;
+		}
+
+		.mobile-menu li {
+			width: 100%;
+		}
+
+		.mobile-menu li a {
+			display: block;
+			padding: 15px;
+			color: white;
+			text-decoration: none;
+			font-size: 18px;
+			border-radius: 5px;
+			transition: all 0.3s ease;
+		}
+
+		.mobile-menu li a:hover {
+			background: rgba(255, 77, 77, 0.2);
+			color: #ff4d4d;
+		}
+
+		.mobile-menu li button {
 			width: 100%;
 			text-align: center;
-			padding: 10px;
 		}
 
-		header ul li button {
-			padding: 10px 15px;
+		header ul {
+			display: none;
 		}
 	}
 </style>
